@@ -5,6 +5,7 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
+from torchvision import models
 
 
 class MLP(nn.Module):
@@ -51,8 +52,8 @@ class CNNCifar(nn.Module):
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(6, 16, 5)
         self.fc1 = nn.Linear(16 * 5 * 5, 120)
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, args.num_classes)
+        self.fc2 = nn.Linear(120, 100)
+        self.fc3 = nn.Linear(100, args.num_classes)
 
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
@@ -61,4 +62,28 @@ class CNNCifar(nn.Module):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
+        return F.log_softmax(x, dim=1)
+
+
+class CNNCifar_glob(nn.Module):
+    def __init__(self, args):
+        super(CNNCifar_glob, self).__init__()
+        self.fc2 = nn.Linear(120, 100)
+        self.fc3 = nn.Linear(100, args.num_classes)
+
+    def forward(self, x):
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        return F.log_softmax(x, dim=1)
+
+
+class ResnetCifar(nn.Module):
+    def __init__(self, args):
+        super(ResnetCifar, self).__init__()
+        self.extractor = models.resnet50(pretrained=False)
+        self.fflayer = nn.Sequential(nn.Linear(1000, args.num_classes))
+
+    def forward(self, x):
+        x = self.extractor(x)
+        x = self.fflayer(x)
         return F.log_softmax(x, dim=1)
