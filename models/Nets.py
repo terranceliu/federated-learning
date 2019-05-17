@@ -11,6 +11,39 @@ from torchvision import models
 class MLP(nn.Module):
     def __init__(self, dim_in, dim_hidden, dim_out):
         super(MLP, self).__init__()
+        self.layer_input = nn.Linear(dim_in, 512)
+        self.relu = nn.ReLU()
+        self.dropout = nn.Dropout()
+        self.layer_hidden1 = nn.Linear(512, 256)
+        self.layer_hidden2 = nn.Linear(256, 128)
+        self.layer_out = nn.Linear(128, dim_out)
+        self.softmax = nn.Softmax(dim=1)
+        self.weight_keys = [['layer_input.weight', 'layer_input.bias'],
+                            ['layer_hidden1.weight', 'layer_hidden1.bias'],
+                            ['layer_hidden2.weight', 'layer_hidden2.bias'],
+                            ['layer_out.weight', 'layer_out.bias']
+                            ]
+
+
+
+    def forward(self, x):
+        x = x.view(-1, x.shape[1]*x.shape[-2]*x.shape[-1])
+        x = self.layer_input(x)
+        x = self.relu(x)
+
+        x = self.layer_hidden1(x)
+        x = self.relu(x)
+        #
+        x = self.layer_hidden2(x)
+        x = self.relu(x)
+
+        x = self.layer_out(x)
+        return self.softmax(x)
+
+
+class MLP_orig(nn.Module):
+    def __init__(self, dim_in, dim_hidden, dim_out):
+        super(MLP_orig, self).__init__()
         self.layer_input = nn.Linear(dim_in, dim_hidden)
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout()
@@ -68,19 +101,30 @@ class CNNCifar(nn.Module):
 class CNNCifar_glob(nn.Module):
     def __init__(self, args):
         super(CNNCifar_glob, self).__init__()
-        self.fc2 = nn.Linear(120, 100)
+        # self.fc2 = nn.Linear(120, 100)
         self.fc3 = nn.Linear(100, args.num_classes)
 
-    def forward(self, x):
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return F.log_softmax(x, dim=1)
+    # def forward(self, x):
+    #     x = F.relu(self.fc2(x))
+    #     x = self.fc3(x)
+    #     return F.log_softmax(x, dim=1)
 
 
 class ResnetCifar(nn.Module):
     def __init__(self, args):
         super(ResnetCifar, self).__init__()
-        self.extractor = models.resnet50(pretrained=False)
+        self.extractor = models.resnet18(pretrained=False)
+        self.fflayer = nn.Sequential(nn.Linear(1000, args.num_classes))
+
+    def forward(self, x):
+        x = self.extractor(x)
+        x = self.fflayer(x)
+        return F.log_softmax(x, dim=1)
+
+class ResnetCifar(nn.Module):
+    def __init__(self, args):
+        super(ResnetCifar, self).__init__()
+        self.extractor = models.resnet18(pretrained=False)
         self.fflayer = nn.Sequential(nn.Linear(1000, args.num_classes))
 
     def forward(self, x):

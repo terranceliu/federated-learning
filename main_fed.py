@@ -10,13 +10,14 @@ import numpy as np
 from torchvision import datasets, transforms, models
 import torch
 
-from utils.sampling import mnist_iid, mnist_noniid, cifar10_iid
+from utils.sampling import mnist_iid, mnist_noniid, cifar10_iid, cifar10_noniid
 from utils.options import args_parser
 from models.Update import LocalUpdate
-from models.Nets import MLP, CNNMnist, CNNCifar, ResnetCifar
+from models.Nets import MLP, MLP_orig, CNNMnist, CNNCifar, ResnetCifar
 from models.Fed import FedAvg
 from models.test import test_img
 
+import pdb
 
 if __name__ == '__main__':
     # parse args
@@ -57,14 +58,15 @@ if __name__ == '__main__':
         if args.iid:
             dict_users = mnist_iid(dataset_train, args.num_users)
         else:
-            dict_users = mnist_noniid(dataset_train, args.num_users)
+            dict_users, _ = mnist_noniid(dataset_train, args.num_users)
     elif args.dataset == 'cifar10':
         dataset_train = datasets.CIFAR10('data/cifar10', train=True, download=True, transform=trans_cifar_train)
         dataset_test = datasets.CIFAR10('data/cifar10', train=False, download=True, transform=trans_cifar_val)
         if args.iid:
             dict_users = cifar10_iid(dataset_train, args.num_users)
         else:
-            exit('Error: only consider IID setting in CIFAR10')
+            dict_users = cifar10_noniid(dataset_train, args.num_users)
+            # exit('Error: only consider IID setting in CIFAR10')
     elif args.dataset == 'cifar100':
         dataset_train = datasets.CIFAR100('data/cifar100', train=True, download=True, transform=trans_cifar_train)
         dataset_test = datasets.CIFAR100('data/cifar100', train=False, download=True, transform=trans_cifar_val)
@@ -87,7 +89,12 @@ if __name__ == '__main__':
         len_in = 1
         for x in img_size:
             len_in *= x
-        net_glob = MLP(dim_in=len_in, dim_hidden=64, dim_out=args.num_classes).to(args.device)
+        net_glob = MLP(dim_in=len_in, dim_hidden=256, dim_out=args.num_classes).to(args.device)
+    elif args.model == 'mlp_orig':
+            len_in = 1
+            for x in img_size:
+                len_in *= x
+            net_glob = MLP_orig(dim_in=len_in, dim_hidden=256, dim_out=args.num_classes).to(args.device)
     else:
         exit('Error: unrecognized model')
     print(net_glob)
@@ -101,12 +108,15 @@ if __name__ == '__main__':
     best_loss = None
     val_acc_list, net_list = [], []
 
+    lr = args.lr
+    results = []
+
     for iter in range(args.epochs):
-        print("\nRound {}".format(iter))
         w_glob = None
         loss_locals, grads_local = [], []
         m = max(int(args.frac * args.num_users), 1)
         idxs_users = np.random.choice(range(args.num_users), m, replace=False)
+        print("Round {}, lr: {:.6f}, {}".format(iter, lr, idxs_users))
 
         for idx in idxs_users:
             local = LocalUpdate(args=args, dataset=dataset_train, idxs=dict_users[idx])
@@ -134,6 +144,8 @@ if __name__ == '__main__':
                 for k in w_glob.keys():
                     w_glob[k] += w_local[k] * grads
 
+        lr *= args.lr_decay
+
         # update global weights
         for k in w_glob.keys():
             w_glob[k] = torch.div(w_glob[k], sum(grads_local))
@@ -143,12 +155,21 @@ if __name__ == '__main__':
 
         # print loss
         loss_avg = sum(loss_locals) / len(loss_locals)
-
-        net_glob.eval()
-        acc_test, loss_test = test_img(net_glob, dataset_test, args)
-
-        print('Round {:3d}, Average loss {:.3f}, Test loss {:.3f}, Test accuracy: {:.2f}'.format(iter, loss_avg, loss_test, acc_test))
         loss_train.append(loss_avg)
+
+        if (iter + 1) % 1 == 0:
+            net_glob.eval()
+            acc_test, loss_test = test_img(net_glob, dataset_test, args)
+            print('Round {:3d}, Average loss {:.3f}, Test loss {:.3f}, Test accuracy: {:.2f}'.format(
+                iter, loss_avg, loss_test, acc_test))
+
+            results.append(np.array([iter, loss_avg, loss_test, acc_test]))
+            final_results = np.array(results)
+
+            results_save_path = './log/fed_{}_{}_iid{}_num{}_C{}_le{}_gn{}.npy'.format(
+                args.dataset, args.model, args.iid, args.num_users, args.frac, args.local_ep, args.grad_norm)
+            np.save(results_save_path, final_results)
+
 
     # plot loss curve
     plt.figure()
@@ -162,7 +183,3 @@ if __name__ == '__main__':
     acc_test, loss_test = test_img(net_glob, dataset_test, args)
     print("Training accuracy: {:.2f}".format(acc_train))
     print("Testing accuracy: {:.2f}".format(acc_test))
-
-# python3 main_fed.py --dataset cifar100 --num_classes 100 --num_channels 3 --model resnet --num_users 1 --epochs 2000 --frac 0.1 --local_ep 1 --local_bs 50 --bs 50 --lr 0.01 --verbose --print_freq 300 --gpu 0 --iid --grad_norm
-# python3 main_fed.py --dataset cifar10 --num_classes 10 --num_channels 3 --model cnn --num_users 1 --epochs 2000 --frac 0.1 --local_ep 1 --local_bs 50 --bs 50 --lr 0.01 --verbose --print_freq 300 --gpu 0 --iid --grad_norm
-#

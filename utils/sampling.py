@@ -21,18 +21,26 @@ def mnist_iid(dataset, num_users):
     return dict_users
 
 
-def mnist_noniid(dataset, num_users):
+def mnist_noniid(dataset, num_users, num_shards=200, num_imgs=300, train=True, rand_set_all=[]):
     """
     Sample non-I.I.D client data from MNIST dataset
     :param dataset:
     :param num_users:
     :return:
     """
-    num_shards, num_imgs = 200, 300
+
+    assert num_shards % num_users == 0
+    shard_per_user = int(num_shards / num_users)
+
     idx_shard = [i for i in range(num_shards)]
     dict_users = {i: np.array([], dtype='int64') for i in range(num_users)}
     idxs = np.arange(num_shards*num_imgs)
-    labels = dataset.train_labels.numpy()
+    if train:
+        labels = dataset.train_labels.numpy()
+    else:
+        labels = dataset.test_labels.numpy()
+
+    assert num_shards * num_imgs == len(labels)
 
     # sort labels
     idxs_labels = np.vstack((idxs, labels))
@@ -40,12 +48,23 @@ def mnist_noniid(dataset, num_users):
     idxs = idxs_labels[0,:]
 
     # divide and assign
-    for i in range(num_users):
-        rand_set = set(np.random.choice(idx_shard, 2, replace=False))
-        idx_shard = list(set(idx_shard) - rand_set)
-        for rand in rand_set:
-            dict_users[i] = np.concatenate((dict_users[i], idxs[rand*num_imgs:(rand+1)*num_imgs]), axis=0)
-    return dict_users
+    if len(rand_set_all) == 0:
+        for i in range(num_users):
+            rand_set = set(np.random.choice(idx_shard, shard_per_user, replace=False))
+            for rand in rand_set:
+                rand_set_all.append(rand)
+
+            idx_shard = list(set(idx_shard) - rand_set) # remove shards from possible choices for other users
+            for rand in rand_set:
+                dict_users[i] = np.concatenate((dict_users[i], idxs[rand*num_imgs:(rand+1)*num_imgs]), axis=0)
+
+    else: # this only works if the train and test set have the same distribution of labels
+        for i in range(num_users):
+            rand_set = rand_set_all[i*shard_per_user: (i+1)*shard_per_user]
+            for rand in rand_set:
+                dict_users[i] = np.concatenate((dict_users[i], idxs[rand*num_imgs:(rand+1)*num_imgs]), axis=0)
+
+    return dict_users, rand_set_all
 
 
 def cifar10_iid(dataset, num_users):
@@ -74,7 +93,7 @@ def cifar10_noniid(dataset, num_users):
     idx_shard = [i for i in range(num_shards)]
     dict_users = {i: np.array([], dtype='int64') for i in range(num_users)}
     idxs = np.arange(num_shards*num_imgs)
-    labels = dataset.train_labels.numpy()
+    labels = np.array(dataset.train_labels)
 
     # sort labels
     idxs_labels = np.vstack((idxs, labels))

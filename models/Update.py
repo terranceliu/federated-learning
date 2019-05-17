@@ -31,10 +31,10 @@ class LocalUpdate(object):
         self.ldr_train = DataLoader(DatasetSplit(dataset, idxs), batch_size=self.args.local_bs, shuffle=True)
         self.pretrain = pretrain
 
-    def train(self, net):
+    def train(self, net, idx=-1, lr=0.1):
         net.train()
         # train and update
-        optimizer = torch.optim.SGD(net.parameters(), lr=self.args.lr, momentum=0.5)
+        optimizer = torch.optim.SGD(net.parameters(), lr=lr, momentum=0.5)
 
         epoch_loss = []
         if self.pretrain:
@@ -58,9 +58,14 @@ class LocalUpdate(object):
                 batch_loss.append(loss.item())
 
                 if not self.pretrain and self.args.verbose and batch_idx % 300 == 0:
-                    print('Update Epoch: {} [{}/{} ({:.0f}%)], Epoch Loss: {:.4f}, Batch Loss: {:.4f}'.format(
-                        iter, batch_idx * len(images), len(self.ldr_train.dataset), 100. * batch_idx / len(self.ldr_train),
-                        sum(batch_loss)/len(batch_loss), loss.item()))
+                    if idx < 0:
+                        print('Update Epoch: {} [{}/{} ({:.0f}%)], Epoch Loss: {:.4f}, Batch Loss: {:.4f}'.format(
+                            iter, batch_idx * len(images), len(self.ldr_train.dataset), 100. * batch_idx / len(self.ldr_train),
+                            sum(batch_loss)/len(batch_loss), loss.item()))
+                    else:
+                        print('Local model {}, Update Epoch: {} [{}/{} ({:.0f}%)], Epoch Loss: {:.4f}, Batch Loss: {:.4f}'.format(
+                            idx, iter, batch_idx * len(images), len(self.ldr_train.dataset), 100. * batch_idx / len(self.ldr_train),
+                            sum(batch_loss)/len(batch_loss), loss.item()))
 
                 # break
 

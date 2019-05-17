@@ -17,7 +17,8 @@ def args_parser():
     parser.add_argument('--momentum', type=float, default=0.5, help="SGD momentum (default: 0.5)")
     parser.add_argument('--split', type=str, default='user', help="train-test split type, user or sample")
     parser.add_argument('--grad_norm', action='store_true', help='use_gradnorm_avging')
-    parser.add_argument('--local_ep_pretrain', type=int, default=25, help="the number of pretrain local ep")
+    parser.add_argument('--local_ep_pretrain', type=int, default=0, help="the number of pretrain local ep")
+    parser.add_argument('--lr_decay', type=float, default=1.0, help="learning rate decay per round")
 
     # model arguments
     parser.add_argument('--model', type=str, default='mlp', help='model name')
@@ -28,6 +29,7 @@ def args_parser():
     parser.add_argument('--num_filters', type=int, default=32, help="number of filters for conv nets")
     parser.add_argument('--max_pool', type=str, default='True',
                         help="Whether use max pooling rather than strided convolutions")
+    parser.add_argument('--num_layers_keep', type=int, default=1, help='number layers to keep')
 
     # other arguments
     parser.add_argument('--dataset', type=str, default='mnist', help="name of dataset")
@@ -39,5 +41,7 @@ def args_parser():
     parser.add_argument('--verbose', action='store_true', help='verbose print')
     parser.add_argument('--print_freq', type=int, default=100, help="print loss frequency during training")
     parser.add_argument('--seed', type=int, default=1, help='random seed (default: 1)')
+    parser.add_argument('--test_freq', type=int, default=1, help='how often to test on val set')
+
     args = parser.parse_args()
     return args
