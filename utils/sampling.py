@@ -81,7 +81,7 @@ def cifar10_iid(dataset, num_users):
         all_idxs = list(set(all_idxs) - dict_users[i])
     return dict_users
 
-
+'''
 def cifar10_noniid(dataset, num_users):
     """
     Sample non-I.I.D client data from MNIST dataset
@@ -107,6 +107,52 @@ def cifar10_noniid(dataset, num_users):
         for rand in rand_set:
             dict_users[i] = np.concatenate((dict_users[i], idxs[rand*num_imgs:(rand+1)*num_imgs]), axis=0)
     return dict_users
+'''
+
+def cifar10_noniid(dataset, num_users, num_shards=200, num_imgs=250, train=True, rand_set_all=[]):
+    """
+    Sample non-I.I.D client data from MNIST dataset
+    :param dataset:
+    :param num_users:
+    :return:
+    """
+
+    assert num_shards % num_users == 0
+    shard_per_user = int(num_shards / num_users)
+
+    idx_shard = [i for i in range(num_shards)]
+    dict_users = {i: np.array([], dtype='int64') for i in range(num_users)}
+    idxs = np.arange(num_shards*num_imgs)
+    if train:
+        labels = np.array(dataset.train_labels)
+    else:
+        labels = np.array(dataset.test_labels)
+
+    assert num_shards * num_imgs == len(labels)
+
+    # sort labels
+    idxs_labels = np.vstack((idxs, labels))
+    idxs_labels = idxs_labels[:,idxs_labels[1,:].argsort()]
+    idxs = idxs_labels[0,:]
+
+    # divide and assign
+    if len(rand_set_all) == 0:
+        for i in range(num_users):
+            rand_set = set(np.random.choice(idx_shard, shard_per_user, replace=False))
+            for rand in rand_set:
+                rand_set_all.append(rand)
+
+            idx_shard = list(set(idx_shard) - rand_set) # remove shards from possible choices for other users
+            for rand in rand_set:
+                dict_users[i] = np.concatenate((dict_users[i], idxs[rand*num_imgs:(rand+1)*num_imgs]), axis=0)
+
+    else: # this only works if the train and test set have the same distribution of labels
+        for i in range(num_users):
+            rand_set = rand_set_all[i*shard_per_user: (i+1)*shard_per_user]
+            for rand in rand_set:
+                dict_users[i] = np.concatenate((dict_users[i], idxs[rand*num_imgs:(rand+1)*num_imgs]), axis=0)
+
+    return dict_users, rand_set_all
 
 
 if __name__ == '__main__':

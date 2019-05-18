@@ -42,6 +42,8 @@ def args_parser():
     parser.add_argument('--print_freq', type=int, default=100, help="print loss frequency during training")
     parser.add_argument('--seed', type=int, default=1, help='random seed (default: 1)')
     parser.add_argument('--test_freq', type=int, default=1, help='how often to test on val set')
+    parser.add_argument('--load_fed', action='store_true', help='load pretrained federated model for local_global')
+    parser.add_argument('--load_fed_name', type=str, default='', help='define pretrained federated model path')
 
     args = parser.parse_args()
     return args

@@ -15,16 +15,16 @@ class MLP(nn.Module):
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout()
         self.layer_hidden1 = nn.Linear(512, 256)
-        self.layer_hidden2 = nn.Linear(256, 128)
+        self.layer_hidden2 = nn.Linear(256, 256)
+        self.layer_hidden3 = nn.Linear(256, 128)
         self.layer_out = nn.Linear(128, dim_out)
         self.softmax = nn.Softmax(dim=1)
         self.weight_keys = [['layer_input.weight', 'layer_input.bias'],
                             ['layer_hidden1.weight', 'layer_hidden1.bias'],
                             ['layer_hidden2.weight', 'layer_hidden2.bias'],
+                            ['layer_hidden3.weight', 'layer_hidden3.bias'],
                             ['layer_out.weight', 'layer_out.bias']
                             ]
-
-
 
     def forward(self, x):
         x = x.view(-1, x.shape[1]*x.shape[-2]*x.shape[-1])
@@ -33,29 +33,14 @@ class MLP(nn.Module):
 
         x = self.layer_hidden1(x)
         x = self.relu(x)
-        #
+
         x = self.layer_hidden2(x)
         x = self.relu(x)
 
-        x = self.layer_out(x)
-        return self.softmax(x)
-
-
-class MLP_orig(nn.Module):
-    def __init__(self, dim_in, dim_hidden, dim_out):
-        super(MLP_orig, self).__init__()
-        self.layer_input = nn.Linear(dim_in, dim_hidden)
-        self.relu = nn.ReLU()
-        self.dropout = nn.Dropout()
-        self.layer_hidden = nn.Linear(dim_hidden, dim_out)
-        self.softmax = nn.Softmax(dim=1)
-
-    def forward(self, x):
-        x = x.view(-1, x.shape[1]*x.shape[-2]*x.shape[-1])
-        x = self.layer_input(x)
-        x = self.dropout(x)
+        x = self.layer_hidden3(x)
         x = self.relu(x)
-        x = self.layer_hidden(x)
+
+        x = self.layer_out(x)
         return self.softmax(x)
 
 
@@ -88,6 +73,27 @@ class CNNCifar(nn.Module):
         self.fc2 = nn.Linear(120, 100)
         self.fc3 = nn.Linear(100, args.num_classes)
 
+        # self.weight_keys = [['fc3.weight', 'fc3.bias'],
+        #                     ['fc2.weight', 'fc2.bias'],
+        #                     ['fc1.weight', 'fc1.bias'],
+        #                     ['conv2.weight', 'conv2.bias'],
+        #                     ['conv1.weight', 'conv1.bias'],
+        #                     ]
+
+        # self.weight_keys = [['conv1.weight', 'conv1.bias'],
+        #                     ['conv2.weight', 'conv2.bias'],
+        #                     ['fc2.weight', 'fc2.bias'],
+        #                     ['fc3.weight', 'fc3.bias'],
+        #                     ['fc1.weight', 'fc1.bias'],
+        #                     ]
+
+        self.weight_keys = [['fc1.weight', 'fc1.bias'],
+                            ['fc2.weight', 'fc2.bias'],
+                            ['fc3.weight', 'fc3.bias'],
+                            ['conv2.weight', 'conv2.bias'],
+                            ['conv1.weight', 'conv1.bias'],
+                            ]
+
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
@@ -96,18 +102,6 @@ class CNNCifar(nn.Module):
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
         return F.log_softmax(x, dim=1)
-
-
-class CNNCifar_glob(nn.Module):
-    def __init__(self, args):
-        super(CNNCifar_glob, self).__init__()
-        # self.fc2 = nn.Linear(120, 100)
-        self.fc3 = nn.Linear(100, args.num_classes)
-
-    # def forward(self, x):
-    #     x = F.relu(self.fc2(x))
-    #     x = self.fc3(x)
-    #     return F.log_softmax(x, dim=1)
 
 
 class ResnetCifar(nn.Module):

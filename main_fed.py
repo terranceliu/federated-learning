@@ -13,7 +13,7 @@ import torch
 from utils.sampling import mnist_iid, mnist_noniid, cifar10_iid, cifar10_noniid
 from utils.options import args_parser
 from models.Update import LocalUpdate
-from models.Nets import MLP, MLP_orig, CNNMnist, CNNCifar, ResnetCifar
+from models.Nets import MLP, CNNMnist, CNNCifar, ResnetCifar
 from models.Fed import FedAvg
 from models.test import test_img
 
@@ -65,7 +65,7 @@ if __name__ == '__main__':
         if args.iid:
             dict_users = cifar10_iid(dataset_train, args.num_users)
         else:
-            dict_users = cifar10_noniid(dataset_train, args.num_users)
+            dict_users, _ = cifar10_noniid(dataset_train, args.num_users)
             # exit('Error: only consider IID setting in CIFAR10')
     elif args.dataset == 'cifar100':
         dataset_train = datasets.CIFAR100('data/cifar100', train=True, download=True, transform=trans_cifar_train)
@@ -94,7 +94,7 @@ if __name__ == '__main__':
             len_in = 1
             for x in img_size:
                 len_in *= x
-            net_glob = MLP_orig(dim_in=len_in, dim_hidden=256, dim_out=args.num_classes).to(args.device)
+            net_glob = MLP(dim_in=len_in, dim_hidden=256, dim_out=args.num_classes).to(args.device)
     else:
         exit('Error: unrecognized model')
     print(net_glob)
@@ -170,6 +170,11 @@ if __name__ == '__main__':
                 args.dataset, args.model, args.iid, args.num_users, args.frac, args.local_ep, args.grad_norm)
             np.save(results_save_path, final_results)
 
+            model_save_path = './save/fed_{}_{}_iid{}_num{}_C{}_le{}_gn{}.pt'.format(
+                args.dataset, args.model, args.iid, args.num_users, args.frac, args.local_ep, args.grad_norm)
+            if best_loss is None or loss_test <  best_loss:
+                best_loss = loss_test
+                torch.save(net_glob.state_dict(), model_save_path)
 
     # plot loss curve
     plt.figure()

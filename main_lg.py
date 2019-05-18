@@ -17,7 +17,7 @@ from torch import nn
 from utils.sampling import mnist_iid, mnist_noniid, cifar10_iid, cifar10_noniid
 from utils.options import args_parser
 from models.Update import LocalUpdate
-from models.Nets import MLP, CNNMnist, CNNCifar, CNNCifar_glob, ResnetCifar
+from models.Nets import MLP, CNNMnist, CNNCifar, ResnetCifar
 from models.Fed import FedAvg
 from models.test import test_img, test_img_local
 
@@ -71,9 +71,10 @@ if __name__ == '__main__':
         dataset_test = datasets.CIFAR10('data/cifar10', train=False, download=True, transform=trans_cifar_val)
         if args.iid:
             dict_users_train = cifar10_iid(dataset_train, args.num_users)
+            dict_users_test = cifar10_iid(dataset_test, args.num_users)
         else:
-            dict_users_train = cifar10_noniid(dataset_train, args.num_users)
-            # exit('Error: only consider IID setting in CIFAR10')
+            dict_users_train, rand_set_all = cifar10_noniid(dataset_train, args.num_users, num_shards=200, num_imgs=250, train=True)
+            dict_users_test, _ = cifar10_noniid(dataset_test, args.num_users, num_shards=200, num_imgs=50, train=False, rand_set_all=rand_set_all)
 
     elif args.dataset == 'cifar100':
         dataset_train = datasets.CIFAR100('data/cifar100', train=True, download=True, transform=trans_cifar_train)
@@ -88,8 +89,7 @@ if __name__ == '__main__':
 
     # build model
     if args.model == 'cnn' and args.dataset in ['cifar10', 'cifar100']:
-        net_local = CNNCifar(args=args).to(args.device)
-        net_glob = CNNCifar_glob(args=args).to(args.device)
+        net_glob = CNNCifar(args=args).to(args.device)
     elif args.model == 'cnn' and args.dataset == 'mnist':
         net_glob = CNNMnist(args=args).to(args.device)
     elif args.model == 'resnet' and args.dataset in ['cifar10', 'cifar100']:
@@ -104,6 +104,12 @@ if __name__ == '__main__':
 
     print(net_glob)
     net_glob.train()
+    if args.load_fed:
+        fed_model_path = './save/keep/fed_{}_{}_iid{}_num{}_C{}_le{}_gn{}.npy'.format(
+            args.dataset, args.model, args.iid, args.num_users, args.frac, args.local_ep, args.grad_norm)
+        if len(args.load_fed_name) > 0:
+            fed_model_path = './save/keep/{}'.format(args.load_fed_name)
+        net_glob.load_state_dict(torch.load(fed_model_path))
 
     total_num_layers = len(net_glob.weight_keys)
     w_glob_keys = net_glob.weight_keys[total_num_layers - args.num_layers_keep:]
@@ -273,7 +279,7 @@ if __name__ == '__main__':
                 for k in w_keys_epoch:
                     w_glob[k] += w_local[k] * grads
 
-        if (iter + 1) % int(int(2 * 1/args.frac)) == 0:
+        if (iter+1) % int(args.num_users * args.frac):
             lr *= args.lr_decay
 
         # get weighted average for global weights
@@ -311,9 +317,9 @@ if __name__ == '__main__':
             results.append(np.array([iter, loss_avg, loss_test_local, acc_test_local, loss_test_avg, acc_test_avg, np.nan, np.nan]))
 
         final_results = np.array(results)
-        results_save_path = './log/lg_{}_{}_keep{}_iid{}_num{}_C{}_le{}_gn{}_pt{}.npy'.format(
+        results_save_path = './log/lg_{}_{}_keep{}_iid{}_num{}_C{}_le{}_gn{}_pt{}_load{}_tfreq{}.npy'.format(
             args.dataset, args.model, args.num_layers_keep, args.iid, args.num_users, args.frac,
-            args.local_ep, args.grad_norm, args.local_ep_pretrain)
+            args.local_ep, args.grad_norm, args.local_ep_pretrain, args.load_fed, args.test_freq)
         np.save(results_save_path, final_results)
 
     # plot loss curve
