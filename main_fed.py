@@ -170,8 +170,8 @@ if __name__ == '__main__':
                 args.dataset, args.model, args.iid, args.num_users, args.frac, args.local_ep, args.grad_norm)
             np.save(results_save_path, final_results)
 
-            model_save_path = './save/fed_{}_{}_iid{}_num{}_C{}_le{}_gn{}.pt'.format(
-                args.dataset, args.model, args.iid, args.num_users, args.frac, args.local_ep, args.grad_norm)
+            model_save_path = './save/fed_{}_{}_iid{}_num{}_C{}_le{}_gn{}_iter{}.pt'.format(
+                args.dataset, args.model, args.iid, args.num_users, args.frac, args.local_ep, args.grad_norm, iter)
             if best_loss is None or loss_test <  best_loss:
                 best_loss = loss_test
                 torch.save(net_glob.state_dict(), model_save_path)
