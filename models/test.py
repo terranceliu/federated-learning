@@ -54,8 +54,7 @@ def test_img(net_g, datatest, args, return_probs=False, user_idx=-1):
 
     if return_probs:
         return accuracy, test_loss, torch.cat(probs)
-    else:
-        return accuracy, test_loss
+    return accuracy, test_loss
 
 
 def test_img_local(net_g, dataset, args, user_idx=-1, idxs=None):
