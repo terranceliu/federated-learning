@@ -131,22 +131,22 @@ class AllConvNet(nn.Module):
     def forward(self, x):
         if self.dropout:
             x = F.dropout(x, .2)
-        conv1_out = F.relu(self.conv1(x))
-        conv2_out = F.relu(self.conv2(conv1_out))
-        conv3_out = F.relu(self.conv3(conv2_out))
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = F.relu(self.conv3(x))
         if self.dropout:
-            conv3_out = F.dropout(conv3_out, .5)
-        conv4_out = F.relu(self.conv4(conv3_out))
-        conv5_out = F.relu(self.conv5(conv4_out))
-        conv6_out = F.relu(self.conv6(conv5_out))
+            conv3_out = F.dropout(x, .5)
+        x = F.relu(self.conv4(x))
+        x = F.relu(self.conv5(x))
+        x = F.relu(self.conv6(x))
         if self.dropout:
-            conv6_out = F.dropout(conv6_out, .5)
-        conv7_out = F.relu(self.conv7(conv6_out))
-        conv8_out = F.relu(self.conv8(conv7_out))
+            x = F.dropout(x, .5)
+        x = F.relu(self.conv7(x))
+        x = F.relu(self.conv8(x))
 
-        class_out = F.relu(self.class_conv(conv8_out))
-        pool_out = class_out.reshape(class_out.size(0), class_out.size(1), -1).mean(-1)
-        return pool_out
+        x = F.relu(self.class_conv(x))
+        x = x.reshape(x.size(0), x.size(1), -1).mean(-1)
+        return x
 
 
 class ResnetCifar(nn.Module):
