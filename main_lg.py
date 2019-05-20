@@ -81,8 +81,10 @@ if __name__ == '__main__':
         dataset_test = datasets.CIFAR100('data/cifar100', train=False, download=True, transform=trans_cifar_val)
         if args.iid:
             dict_users_train = cifar10_iid(dataset_train, args.num_users)
+            dict_users_test = cifar10_iid(dataset_test, args.num_users)
         else:
-            exit('Error: only consider IID setting in CIFAR10')
+            dict_users_train, rand_set_all = cifar10_noniid(dataset_train, args.num_users, num_shards=1000, num_imgs=50, train=True)
+            dict_users_test, _ = cifar10_noniid(dataset_test, args.num_users, num_shards=1000, num_imgs=10, train=False, rand_set_all=rand_set_all)
     else:
         exit('Error: unrecognized dataset')
     img_size = dataset_train[0][0].shape

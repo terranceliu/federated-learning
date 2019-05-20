@@ -73,7 +73,7 @@ if __name__ == '__main__':
         if args.iid:
             dict_users = cifar10_iid(dataset_train, args.num_users)
         else:
-            exit('Error: only consider IID setting in CIFAR10')
+            dict_users, _ = cifar10_noniid(dataset_train, args.num_users, num_shards=1000, num_imgs=50, train=True)
     else:
         exit('Error: unrecognized dataset')
     img_size = dataset_train[0][0].shape
