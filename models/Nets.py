@@ -135,7 +135,7 @@ class AllConvNet(nn.Module):
         x = F.relu(self.conv2(x))
         x = F.relu(self.conv3(x))
         if self.dropout:
-            conv3_out = F.dropout(x, .5)
+            x = F.dropout(x, .5)
         x = F.relu(self.conv4(x))
         x = F.relu(self.conv5(x))
         x = F.relu(self.conv6(x))
