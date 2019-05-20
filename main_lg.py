@@ -221,8 +221,8 @@ if __name__ == '__main__':
         acc_test_avg, loss_test_avg =  test_img_avg_all()
         loss_test, acc_test = test_img_ensemble_all()
 
-    print('Initial Ensemble: Loss (local): {:.3f}, Acc (local): {:.2f}, Loss (avg): {:.3}, Acc (avg): {:.2f}, Loss (ens) {:.3f}, Acc: (ens) {:.2f}, '.format(
-        loss_test_local, acc_test_local, loss_test_avg, acc_test_avg, loss_test, acc_test))
+        print('Initial Ensemble: Loss (local): {:.3f}, Acc (local): {:.2f}, Loss (avg): {:.3}, Acc (avg): {:.2f}, Loss (ens) {:.3f}, Acc: (ens) {:.2f}, '.format(
+            loss_test_local, acc_test_local, loss_test_avg, acc_test_avg, loss_test, acc_test))
 
     # training
     loss_train = []
