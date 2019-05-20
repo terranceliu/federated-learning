@@ -140,7 +140,9 @@ if __name__ == '__main__':
         for idx in range(args.num_users):
             net_local = net_local_list[idx]
             net_local.eval()
-            _, _, probs = test_img(net_local, dataset_test, args, return_probs=True, user_idx=idx)
+            # _, _, probs = test_img(net_local, dataset_test, args, return_probs=True, user_idx=idx)
+            acc, loss, probs = test_img(net_local, dataset_test, args, return_probs=True, user_idx=idx)
+            print('Local model: {}, loss: {}, acc: {}'.format(idx, loss, acc))
             probs_all.append(probs.detach())
 
             preds = probs.data.max(1, keepdim=True)[1].cpu().numpy().reshape(-1)
@@ -212,13 +214,13 @@ if __name__ == '__main__':
                 print('Local model {}, Train Epoch Loss: {:.4f}'.format(idx, loss))
                 torch.save(net_local.state_dict(), net_local_path)
 
-        print("Getting initial loss and acc...")
-        acc_test_local, loss_test_local = test_img_local_all()
-        acc_test_avg, loss_test_avg =  test_img_avg_all()
-        loss_test, acc_test = test_img_ensemble_all()
+    print("Getting initial loss and acc...")
+    acc_test_local, loss_test_local = test_img_local_all()
+    acc_test_avg, loss_test_avg =  test_img_avg_all()
+    loss_test, acc_test = test_img_ensemble_all()
 
-        print('Initial Ensemble: Loss (local): {:.3f}, Acc (local): {:.2f}, Loss (avg): {:.3}, Acc (avg): {:.2f}, Loss (ens) {:.3f}, Acc: (ens) {:.2f}, '.format(
-            loss_test_local, acc_test_local, loss_test_avg, acc_test_avg, loss_test, acc_test))
+    print('Initial Ensemble: Loss (local): {:.3f}, Acc (local): {:.2f}, Loss (avg): {:.3}, Acc (avg): {:.2f}, Loss (ens) {:.3f}, Acc: (ens) {:.2f}, '.format(
+        loss_test_local, acc_test_local, loss_test_avg, acc_test_avg, loss_test, acc_test))
 
     # training
     loss_train = []

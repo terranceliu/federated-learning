@@ -81,7 +81,7 @@ if __name__ == '__main__':
     # build model
     if args.model == 'cnn' and args.dataset in ['cifar10', 'cifar100']:
         net_glob = CNNCifar(args=args).to(args.device)
-    if args.model == 'all' and args.dataset in ['cifar10', 'cifar100']:
+    elif args.model == 'all' and args.dataset in ['cifar10', 'cifar100']:
         net_glob = AllConvNet(args=args).to(args.device)
     elif args.model == 'cnn' and args.dataset == 'mnist':
         net_glob = CNNMnist(args=args).to(args.device)
