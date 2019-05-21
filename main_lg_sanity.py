@@ -237,7 +237,9 @@ if __name__ == '__main__':
         best_acc = 0
         w_best = None
 
-        for i in range(200):
+        count_same = 0
+        prev_acc = 0
+        for i in range(500):
             local = LocalUpdate(args=args, dataset=dataset_train, idxs=dict_users_train[idx])
             net_local = net_local_list[idx]
 
@@ -247,7 +249,14 @@ if __name__ == '__main__':
                 w_best = w_local
 
             print(acc_test_local)
-            if acc_test_local >= 99:
+
+            if acc_test_local == prev_acc:
+                count += 1
+            else:
+                count = 0
+            prev_acc = acc_test_local
+
+            if acc_test_local >= 99 or count >= 10:
                 break
 
         net_local.load_state_dict(w_best)
