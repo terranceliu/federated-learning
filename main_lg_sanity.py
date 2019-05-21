@@ -248,7 +248,7 @@ if __name__ == '__main__':
             if acc_test_local > best_acc:
                 w_best = w_local
 
-            print(acc_test_local)
+            print(i, acc_test_local)
 
             if acc_test_local == prev_acc:
                 count += 1
