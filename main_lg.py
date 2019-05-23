@@ -347,13 +347,13 @@ if __name__ == '__main__':
                     args.results_save, args.dataset, 0, args.iid, user)
                 torch.save(net_local_list[user].state_dict(), model_save_path)
 
-        for user in range(args.num_users):
-            model_save_path = './save/{}/{}_{}_iid{}/user{}.pt'.format(
-                args.results_save, args.dataset, 0, args.iid, user)
+    for user in range(args.num_users):
+        model_save_path = './save/{}/{}_{}_iid{}/user{}.pt'.format(
+            args.results_save, args.dataset, 0, args.iid, user)
 
-            net_local = net_local_list[idx]
-            net_local.load_state_dict(torch.load(fed_model_path))
-        loss_test, acc_test = test_img_ensemble_all()
+        net_local = net_local_list[idx]
+        net_local.load_state_dict(torch.load(model_save_path))
+    loss_test, acc_test = test_img_ensemble_all()
 
         print('Best model, iter: {}, acc: {}, acc (ens): {}'.format(best_epoch, best_acc, acc_test))
 
