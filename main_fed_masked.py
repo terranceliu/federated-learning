@@ -13,7 +13,7 @@ import torch
 from utils.sampling import mnist_iid, mnist_noniid, cifar10_iid, cifar10_noniid
 from utils.options import args_parser
 from models.Update import LocalUpdate
-from models.Nets import MLP, CNNMnist, CNNCifar, ResnetCifar, AllConvNet
+from models.Nets import MLP, CNNMnist, CNNCifar, ResnetCifar
 from models.Fed import FedAvg
 from models.test import test_img
 
@@ -58,11 +58,7 @@ if __name__ == '__main__':
         if args.iid:
             dict_users = mnist_iid(dataset_train, args.num_users)
         else:
-            dict_users, rand_set_all = mnist_noniid(dataset_train, args.num_users, num_shards=200, num_imgs=300,
-                                                      train=True)
-            save_path = './save/{}/randset_fed_{}_iid{}_num{}_C{}.pt'.format(
-                args.results_save, args.dataset, args.iid, args.num_users, args.frac)
-            np.save(save_path, rand_set_all)
+            dict_users, _ = mnist_noniid(dataset_train, args.num_users)
     elif args.dataset == 'cifar10':
         dataset_train = datasets.CIFAR10('data/cifar10', train=True, download=True, transform=trans_cifar_train)
         dataset_test = datasets.CIFAR10('data/cifar10', train=False, download=True, transform=trans_cifar_val)
@@ -77,7 +73,7 @@ if __name__ == '__main__':
         if args.iid:
             dict_users = cifar10_iid(dataset_train, args.num_users)
         else:
-            dict_users, _ = cifar10_noniid(dataset_train, args.num_users, num_shards=1000, num_imgs=50, train=True)
+            exit('Error: only consider IID setting in CIFAR10')
     else:
         exit('Error: unrecognized dataset')
     img_size = dataset_train[0][0].shape
@@ -85,8 +81,6 @@ if __name__ == '__main__':
     # build model
     if args.model == 'cnn' and args.dataset in ['cifar10', 'cifar100']:
         net_glob = CNNCifar(args=args).to(args.device)
-    elif args.model == 'all' and args.dataset in ['cifar10', 'cifar100']:
-        net_glob = AllConvNet(args=args).to(args.device)
     elif args.model == 'cnn' and args.dataset == 'mnist':
         net_glob = CNNMnist(args=args).to(args.device)
     elif args.model == 'resnet' and args.dataset in ['cifar10', 'cifar100']:
@@ -124,6 +118,8 @@ if __name__ == '__main__':
         idxs_users = np.random.choice(range(args.num_users), m, replace=False)
         print("Round {}, lr: {:.6f}, {}".format(iter, lr, idxs_users))
 
+        masks = {}
+
         for idx in idxs_users:
             local = LocalUpdate(args=args, dataset=dataset_train, idxs=dict_users[idx])
             net_local = copy.deepcopy(net_glob)
@@ -142,19 +138,40 @@ if __name__ == '__main__':
             # print(grads)
             grads_local.append(grads)
 
+            mask_frac = .25
+
+            masks[idx] = {}
+            for k in w_local.keys():
+                masks[idx][k] = (torch.FloatTensor(w_local[k].shape).uniform_() > mask_frac).float()
+
             if w_glob is None:
                 w_glob = copy.deepcopy(w_local)
                 for k in w_glob.keys():
-                    w_glob[k] *= grads
+                    mask = masks[idx][k]
+                    w_glob[k] *= mask
             else:
                 for k in w_glob.keys():
-                    w_glob[k] += w_local[k] * grads
+                    mask = masks[idx][k]
+                    w_glob[k] += w_local[k] * mask
 
         lr *= args.lr_decay
 
+        mask_temp = None
+        for idx in idxs_users:
+            if mask_temp is None:
+                mask_temp = masks[idx]
+            else:
+                for k in w_glob.keys():
+                    mask_temp[k] += masks[idx][k]
+        for k in mask_temp.keys():
+            mask_temp[k] += (mask_temp[k] == 0).float()
+
+
+        # pdb.set_trace()
+
         # update global weights
         for k in w_glob.keys():
-            w_glob[k] = torch.div(w_glob[k], sum(grads_local))
+            w_glob[k] = torch.div(w_glob[k], mask_temp[k])
 
         # copy weight to net_glob
         net_glob.load_state_dict(w_glob)
@@ -172,15 +189,15 @@ if __name__ == '__main__':
             results.append(np.array([iter, loss_avg, loss_test, acc_test]))
             final_results = np.array(results)
 
-            results_save_path = './log/{}/fed_{}_{}_iid{}_num{}_C{}_le{}_gn{}.npy'.format(
-                args.results_save, args.dataset, args.model, args.iid, args.num_users, args.frac, args.local_ep, args.grad_norm)
-            np.save(results_save_path, final_results)
-
-            model_save_path = './save/{}/fed_{}_{}_iid{}_num{}_C{}_le{}_gn{}_iter{}.pt'.format(
-                args.results_save, args.dataset, args.model, args.iid, args.num_users, args.frac, args.local_ep, args.grad_norm, iter)
-            if best_loss is None or loss_test <  best_loss:
-                best_loss = loss_test
-                torch.save(net_glob.state_dict(), model_save_path)
+            # results_save_path = './log/fed_{}_{}_iid{}_num{}_C{}_le{}_gn{}.npy'.format(
+            #     args.dataset, args.model, args.iid, args.num_users, args.frac, args.local_ep, args.grad_norm)
+            # np.save(results_save_path, final_results)
+            #
+            # model_save_path = './save/fed_{}_{}_iid{}_num{}_C{}_le{}_gn{}_iter{}.pt'.format(
+            #     args.dataset, args.model, args.iid, args.num_users, args.frac, args.local_ep, args.grad_norm, iter)
+            # if best_loss is None or loss_test <  best_loss:
+            #     best_loss = loss_test
+            #     torch.save(net_glob.state_dict(), model_save_path)
 
     # plot loss curve
     plt.figure()

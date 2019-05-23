@@ -65,6 +65,9 @@ if __name__ == '__main__':
         else:
             dict_users_train, rand_set_all = mnist_noniid(dataset_train, args.num_users, num_shards=200, num_imgs=300, train=True)
             dict_users_test, _ = mnist_noniid(dataset_test, args.num_users, num_shards=200, num_imgs=50, train=False, rand_set_all=rand_set_all)
+            save_path = './save/{}/randset_lg_{}_iid{}_num{}_C{}.pt'.format(
+                args.results_save, args.dataset, args.iid, args.num_users, args.frac)
+            np.save(save_path, rand_set_all)
 
     elif args.dataset == 'cifar10':
         dataset_train = datasets.CIFAR10('data/cifar10', train=True, download=True, transform=trans_cifar_train)
@@ -327,6 +330,18 @@ if __name__ == '__main__':
             args.dataset, args.model, args.num_layers_keep, args.iid, args.num_users, args.frac,
             args.local_ep, args.grad_norm, args.local_ep_pretrain, args.load_fed, args.test_freq)
         np.save(results_save_path, final_results)
+
+        if best_loss is None or loss_test_local < best_loss:
+            best_loss = loss_test_local
+            for user in range(args.num_users):
+                model_save_path = './save/{}/{}_{}_iid{}/'.format(
+                    args.results_save, args.dataset, iter, args.iid)
+                if not os.path.exists(model_save_path):
+                    os.makedirs(model_save_path)
+
+                model_save_path = './save/{}/{}_{}_iid{}/user{}.pt'.format(
+                    args.results_save, args.dataset, iter, args.iid, user)
+                torch.save(net_local_list[user].state_dict(), model_save_path)
 
     # plot loss curve
     plt.figure()

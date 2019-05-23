@@ -44,7 +44,7 @@ def args_parser():
     parser.add_argument('--test_freq', type=int, default=1, help='how often to test on val set')
     parser.add_argument('--load_fed', action='store_true', help='load pretrained federated model for local_global')
     parser.add_argument('--load_fed_name', type=str, default='', help='define pretrained federated model path')
-    parser.add_argument('--fed_results_save', type=str, default='/', help='define fed results save folder')
+    parser.add_argument('--results_save', type=str, default='/', help='define fed results save folder')
 
     args = parser.parse_args()
     return args

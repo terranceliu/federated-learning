@@ -239,7 +239,7 @@ if __name__ == '__main__':
 
         count_same = 0
         prev_acc = 0
-        for i in range(500):
+        for i in range(10):
             local = LocalUpdate(args=args, dataset=dataset_train, idxs=dict_users_train[idx])
             net_local = net_local_list[idx]
 
