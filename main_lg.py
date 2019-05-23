@@ -355,7 +355,7 @@ if __name__ == '__main__':
         net_local.load_state_dict(torch.load(model_save_path))
     loss_test, acc_test = test_img_ensemble_all()
 
-        print('Best model, iter: {}, acc: {}, acc (ens): {}'.format(best_epoch, best_acc, acc_test))
+    print('Best model, iter: {}, acc: {}, acc (ens): {}'.format(best_epoch, best_acc, acc_test))
 
 
     # plot loss curve
