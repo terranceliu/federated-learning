@@ -233,14 +233,13 @@ if __name__ == '__main__':
     results = []
 
     for idx in range(args.num_users):
-        print('Local model {}'.format(idx))
         best_acc = 0
         w_best = None
         count_same = 0
         prev_acc = 0
 
         net_local = net_local_list[idx]
-        for i in range(250):
+        for i in range(500):
             local = LocalUpdate(args=args, dataset=dataset_train, idxs=dict_users_train[idx])
 
             w_local, loss = local.train(net=net_local.to(args.device), lr=lr)
@@ -257,10 +256,11 @@ if __name__ == '__main__':
                 count = 0
             prev_acc = acc_test_local
 
-            if acc_test_local >= 97 or count >= 25:
+            if acc_test_local >= 100 or count >= 25:
                 break
 
-        print(best_acc)
+        if best_acc < 90:
+            print('Local model {}, best acc: {}'.format(idx, best_acc))
         net_local.load_state_dict(w_best)
 
     acc_test_local, loss_test_local = test_img_local_all()

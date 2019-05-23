@@ -316,7 +316,8 @@ if __name__ == '__main__':
         acc_test_local, loss_test_local = test_img_local_all()
         acc_test_avg, loss_test_avg = test_img_avg_all()
 
-        if (iter + 1) % args.test_freq == 0: # this takes too much time, so we run it less frequently
+        # if (iter + 1) % args.test_freq == 0: # this takes too much time, so we run it less frequently
+        if (iter + 1) > 75:
             loss_test, acc_test = test_img_ensemble_all()
             print('Round {:3d}, Avg Loss {:.3f}, Loss (local): {:.3f}, Acc (local): {:.2f}, Loss (avg): {:.3}, Acc (avg): {:.2f}, Loss (ens) {:.3f}, Acc: (ens) {:.2f}, '.format(
                 iter, loss_avg, loss_test_local, acc_test_local, loss_test_avg, acc_test_avg, loss_test, acc_test))
