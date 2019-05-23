@@ -112,6 +112,8 @@ if __name__ == '__main__':
     val_loss_pre, counter = 0, 0
     net_best = None
     best_loss = None
+    best_acc = None
+    best_epoch = None
     val_acc_list, net_list = [], []
 
     lr = args.lr
@@ -177,10 +179,13 @@ if __name__ == '__main__':
             np.save(results_save_path, final_results)
 
             model_save_path = './save/{}/fed_{}_{}_iid{}_num{}_C{}_le{}_gn{}_iter{}.pt'.format(
-                args.results_save, args.dataset, args.model, args.iid, args.num_users, args.frac, args.local_ep, args.grad_norm, iter)
-            if best_loss is None or loss_test <  best_loss:
-                best_loss = loss_test
+                args.results_save, args.dataset, args.model, args.iid, args.num_users, args.frac, args.local_ep, args.grad_norm, 0)
+            if best_acc is None or acc_test < best_acc:
+                best_acc = acc_test
+                best_epoch = iter
                 torch.save(net_glob.state_dict(), model_save_path)
+
+    print('Best model, iter: {}, acc: {}'.format(best_epoch, best_acc))
 
     # plot loss curve
     plt.figure()

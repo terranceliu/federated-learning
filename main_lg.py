@@ -233,6 +233,8 @@ if __name__ == '__main__':
     val_loss_pre, counter = 0, 0
     net_best = None
     best_loss = None
+    best_acc = None
+    best_epoch = None
     val_acc_list, net_list = [], []
 
     lr = args.lr
@@ -331,17 +333,30 @@ if __name__ == '__main__':
             args.local_ep, args.grad_norm, args.local_ep_pretrain, args.load_fed, args.test_freq)
         np.save(results_save_path, final_results)
 
-        if best_loss is None or loss_test_local < best_loss:
-            best_loss = loss_test_local
+        if best_acc is None or acc_test_local > best_acc:
+            best_acc = acc_test_local
+            best_epoch = iter
+
             for user in range(args.num_users):
                 model_save_path = './save/{}/{}_{}_iid{}/'.format(
-                    args.results_save, args.dataset, iter, args.iid)
+                    args.results_save, args.dataset, 0, args.iid)
                 if not os.path.exists(model_save_path):
                     os.makedirs(model_save_path)
 
                 model_save_path = './save/{}/{}_{}_iid{}/user{}.pt'.format(
-                    args.results_save, args.dataset, iter, args.iid, user)
+                    args.results_save, args.dataset, 0, args.iid, user)
                 torch.save(net_local_list[user].state_dict(), model_save_path)
+
+        for user in range(args.num_users):
+            model_save_path = './save/{}/{}_{}_iid{}/user{}.pt'.format(
+                args.results_save, args.dataset, 0, args.iid, user)
+
+            net_local = net_local_list[idx]
+            net_local.load_state_dict(torch.load(fed_model_path))
+        loss_test, acc_test = test_img_ensemble_all()
+
+        print('Best model, iter: {}, acc: {}, acc (ens): {}'.format(best_epoch, best_acc, acc_test))
+
 
     # plot loss curve
     plt.figure()
