@@ -158,7 +158,7 @@ if __name__ == '__main__':
 
         # ensemble metrics
         preds_avg = preds_probs.data.max(1, keepdim=True)[1].cpu().numpy().reshape(-1)
-        loss_test = criterion(preds_probs, torch.tensor(labels)..to(args.device)).item()
+        loss_test = criterion(preds_probs, torch.tensor(labels).to(args.device)).item()
         acc_test = (preds_avg == labels).mean() * 100
 
         return loss_test, acc_test
