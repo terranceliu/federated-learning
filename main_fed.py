@@ -25,6 +25,11 @@ if __name__ == '__main__':
     args = args_parser()
     args.device = torch.device('cuda:{}'.format(args.gpu) if torch.cuda.is_available() and args.gpu != -1 else 'cpu')
 
+    if not os.path.exists('./log/{}/'.format(args.results_save)):
+        os.makedirs('./log/{}/'.format(args.results_save))
+    if not os.path.exists('./save/{}/{}/'.format(args.results_save, args.dataset)):
+        os.makedirs('./save/{}/{}/'.format(args.results_save, args.dataset))
+
     trans_mnist = transforms.Compose([transforms.ToTensor(),
                                       transforms.Normalize((0.1307,), (0.3081,))])
 
@@ -174,11 +179,6 @@ if __name__ == '__main__':
 
             results.append(np.array([iter, loss_avg, loss_test, acc_test]))
             final_results = np.array(results)
-
-            if not os.path.exists('./log/{}/'.format(args.results_save)):
-                os.makedirs('./log/{}/'.format(args.results_save, args.dataset))
-            if not os.path.exists('./save/{}/{}/'.format(args.results_save)):
-                os.makedirs('./save/{}/{}/'.format(args.results_save, args.dataset))
 
             results_save_path = './log/{}/fed_{}_{}_iid{}_num{}_C{}_le{}_gn{}.npy'.format(
                 args.results_save, args.dataset, args.model, args.iid, args.num_users, args.frac, args.local_ep, args.grad_norm)
