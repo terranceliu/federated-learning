@@ -16,6 +16,7 @@ from models.Update import LocalUpdate
 from models.Nets import MLP, CNNMnist, CNNCifar, ResnetCifar, AllConvNet
 from models.Fed import FedAvg
 from models.test import test_img
+import os
 
 import pdb
 
@@ -173,6 +174,11 @@ if __name__ == '__main__':
 
             results.append(np.array([iter, loss_avg, loss_test, acc_test]))
             final_results = np.array(results)
+
+            if not os.path.exists('./log/{}/'.format(args.results_save)):
+                os.makedirs('./log/{}/'.format(args.results_save, args.dataset))
+            if not os.path.exists('./save/{}/{}/'.format(args.results_save)):
+                os.makedirs('./save/{}/{}/'.format(args.results_save, args.dataset))
 
             results_save_path = './log/{}/fed_{}_{}_iid{}_num{}_C{}_le{}_gn{}.npy'.format(
                 args.results_save, args.dataset, args.model, args.iid, args.num_users, args.frac, args.local_ep, args.grad_norm)
