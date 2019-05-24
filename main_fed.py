@@ -164,7 +164,7 @@ if __name__ == '__main__':
         # print loss
         loss_avg = sum(loss_locals) / len(loss_locals)
         loss_train.append(loss_avg)
-,
+
         if (iter + 1) % 1 == 0:
             net_glob.eval()
             acc_test, loss_test = test_img(net_glob, dataset_test, args)
@@ -178,13 +178,18 @@ if __name__ == '__main__':
                 args.results_save, args.dataset, args.model, args.iid, args.num_users, args.frac, args.local_ep, args.grad_norm)
             np.save(results_save_path, final_results)
 
+            if args.dataset == 'mnist':
+                start_saving = 350
+            else:
+                start_saving = 950
 
-            model_save_path = './save/{}/fed_{}_{}_iid{}_num{}_C{}_le{}_gn{}_iter{}.pt'.format(
-                args.results_save, args.dataset, args.model, args.iid, args.num_users, args.frac, args.local_ep, args.grad_norm, 0)
+            model_save_path = './save/{}/{}/fed_{}_{}_iid{}_num{}_C{}_le{}_gn{}_iter{}.pt'.format(
+                    args.results_save, args.dataset, args.dataset, args.model, args.iid, args.num_users, args.frac, args.local_ep, args.grad_norm, iter)
             if best_acc is None or acc_test > best_acc:
                 best_acc = acc_test
                 best_epoch = iter
-                torch.save(net_glob.state_dict(), model_save_path)
+                if iter > start_saving:
+                    torch.save(net_glob.state_dict(), model_save_path)
 
     print('Best model, iter: {}, acc: {}'.format(best_epoch, best_acc))
 
